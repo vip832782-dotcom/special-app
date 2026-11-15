@@ -26,6 +26,25 @@ jobs:
           PROJ=$(dirname "$(find src -name settings.gradle | head -1)")
           echo "PROJ=$PROJ" >> "$GITHUB_ENV"
 
+      - name: Fix JVM target (Java 17)
+        run: |
+          cd "$PROJ"
+          python3 - <<'PY'
+          p = "app/build.gradle"
+          s = open(p).read()
+          if "VERSION_17" not in s:
+              add = ("\n    compileOptions {\n"
+                     "        sourceCompatibility JavaVersion.VERSION_17\n"
+                     "        targetCompatibility JavaVersion.VERSION_17\n"
+                     "    }\n"
+                     "    kotlinOptions {\n"
+                     "        jvmTarget = '17'\n"
+                     "    }\n")
+              s = s.replace("compileSdk 35\n", "compileSdk 35\n" + add, 1)
+              open(p, "w").write(s)
+          PY
+          cat app/build.gradle
+
       - name: Accept Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
